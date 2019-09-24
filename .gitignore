@@ -52,3 +52,4 @@ CATKIN_IGNORE
 
 .idea/
 .catkin_workspace/
+.catkin_tools/
