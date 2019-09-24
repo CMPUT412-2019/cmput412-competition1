@@ -19,7 +19,7 @@
   <!-- Kobuki nodelet -->
   <node pkg="nodelet" type="nodelet" name="mobile_base"
         args="load kobuki_node/KobukiNodelet mobile_base_nodelet_manager">
-    <rosparam file="$(find base_navigation)/param/mobile_base.yaml" command="load"/>
+    <rosparam file="$(find follow_bot)/param/mobile_base.yaml" command="load"/>
     <remap from="mobile_base/odom" to="mobile_base/odom"/>
   </node>
 
@@ -34,4 +34,5 @@
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
     <param name="publish_frequency" type="double" value="30.0" />
   </node>
+
 </launch>
