@@ -9,15 +9,18 @@
 
   <!-- Control node -->
   <node pkg="follow_bot" type="control.py" name="control" output="screen">
+    <remap from="pose2d" to="/pose2d"/>
+    <remap from="target" to="/target_pose"/>
+    <remap from="cmd_vel" to="/control/cmd_vel_raw"/>
     <param name="turn_tolerance" value="0.01" />
-    <param name="turn_speed" value="5.4" />
-    <param name="move_speed" value="0.8" />
+    <param name="turn_speed" value="1" />
+    <param name="move_speed" value="0.7" />
     <param name="position_threshold" value="0.1" />
-    <remap from="pose2d" to="/pose2d" />
-    <remap from="odom" to="$(arg odom_topic)" />
-    <remap from="cmd_vel" to="/control/cmd_vel_raw" />
-    <remap from="bumper" to="/mobile_base/events/bumper" />
-    <remap from="sound" to="/mobile_base/commands/sound" />
+  </node>
+
+  <node pkg="follow_bot" type="target_position_estimator.py" name="target_position_estimator" output="screen">
+    <remap from="pointcloud" to="/camera/depth/points"/>
+    <remap from="target_pose" to="/target_pose/dontuse"/>
   </node>
 
   <!-- Velocity smoother -->
@@ -33,4 +36,5 @@
     <remap from="velocity_smoother/odometry" to="/$(arg odom_topic)" />
     <remap from="velocity_smoother/smooth_cmd_vel" to="/cmd_vel_mux/input/teleop" />
   </node>
+
 </launch>
