@@ -52,7 +52,7 @@ class TargetPositionEstimator:
         out_point.point.z = average[2]
         print(out_point)
 
-        # out_point = self.tf_listener.transformPoint(target_frame='/odom', ps=out_point)
+        out_point = self.tf_listener.transformPoint(target_frame='/odom', ps=out_point)
 
         self.point_pub.publish(out_point)
 
