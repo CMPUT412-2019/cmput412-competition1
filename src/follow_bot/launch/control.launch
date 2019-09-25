@@ -20,7 +20,7 @@
 
   <node pkg="follow_bot" type="target_position_estimator.py" name="target_position_estimator" output="screen">
     <remap from="pointcloud" to="/camera/depth/points"/>
-    <remap from="target_pose" to="/target_pose/dontuse"/>
+    <remap from="target_pose" to="/target_pose/"/>
   </node>
 
   <!-- Velocity smoother -->
