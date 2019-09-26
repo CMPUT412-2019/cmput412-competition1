@@ -44,21 +44,34 @@ class FollowState(State):
             self.rate.sleep()
 
     def drive_toward_target(self):
-        dp, dtheta, ddtheta = self.get_deltas_to_target(self.target)
-        # if np.linalg.norm(dp) < self.position_threshold:
-        #     return
-        # if np.linalg.norm(dp) < self.speed:
-        #     return
-        self.speed = 1
+
+        dx_tr = self.target.x - self.pose.x
+        dy_tr = self.target.y - self.pose.y
+
+        d_tr = np.sqrt(dx_tr**2 + dy_tr**2)
+        min_distance_to_target = 1.0
+
+        m_x = self.target.x - dx_tr/d_tr * min_distance_to_target
+        m_y = self.target.y - dy_tr/d_tr * min_distance_to_target
+
+        # Now, we move toward m, but if close we instead move angle to t.
+
+        dx_mr = m_x - self.pose.x
+        dy_mr = m_y - self.pose.y
+        d_mr = np.sqrt(dx_mr**2 + dy_mr**2)
+        if d_mr < 0.1:
+            dtheta = math.atan2(dy_tr, dx_tr) - self.pose.theta
+        else:
+            dtheta = math.atan2(dy_mr, dx_mr) - self.pose.theta
+        if abs(dtheta) > np.pi:
+            dtheta = dtheta - np.sign(dtheta) * 2 * np.pi
+
+        dp = np.array([dx_mr, dy_mr])
+
+        self.speed = 0.2
+        self.angular_speed = 2.0
         v = dp if np.linalg.norm(dp) < self.speed else dp / np.linalg.norm(dp) * self.speed
-        # v = dp * 0.01 - np.array([self.odom.twist.twist.linear.x, self.odom.twist.twist.linear.y]) * 0.0
-
-        if np.linalg.norm(dp) < 0.01:
-            v *= 0.0
-
-        Kp = 2.0
-        Kd = 0.0
-        vtheta = dtheta if abs(dtheta) < 2.0 else np.sign(dtheta) * 2.0 #  Kp * dtheta + Kd * ddtheta
+        vtheta = dtheta if abs(dtheta) < self.angular_speed else np.sign(dtheta) * self.angular_speed
 
         self.publish_twist(v, vtheta)
 

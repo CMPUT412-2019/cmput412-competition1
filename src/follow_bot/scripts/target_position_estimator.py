@@ -2,7 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import Twist, Pose2D, PointStamped
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import PointCloud2, LaserScan
 from sensor_msgs import point_cloud2
 import numpy as np
 import tf
@@ -16,11 +16,51 @@ class TargetPositionEstimator:
 
         self.target_pose_publisher = rospy.Publisher('target_pose', Pose2D)
         self.bounded_ptcloud_publisher = rospy.Publisher('bounded_pointcloud', PointCloud2)
-        self.pointcloud_subscriber = rospy.Subscriber('pointcloud', PointCloud2, self.pointcloud_updated)
+        # self.pointcloud_subscriber = rospy.Subscriber('pointcloud', PointCloud2, self.pointcloud_updated)
         self.tf_listener = tf.TransformListener()
         self.point_pub = rospy.Publisher('/target_stamped', PointStamped)
+        self.pose = None  # type: Pose2D
+        self.pose_subscriber = rospy.Subscriber('/pose2d', Pose2D, self.pose_callback)
+        self.scan_subscriber = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
+
+    def pose_callback(self, message):
+        self.pose = message
+
+    def scan_callback(self, scan):  # type: (LaserScan) -> None
+        if self.pose is None:
+            rospy.loginfo('Waiting for pose...')
+            return
+        scan = scan  # type: LaserScan
+        
+        ranges = np.array(scan.ranges)
+        angles = np.linspace(scan.angle_min, scan.angle_max, num=len(scan.ranges), endpoint=True)
+        angle_mid = (scan.angle_min + scan.angle_max) / 2.0
+        ranges[angles <= angle_mid] = 100
+
+        try:
+            index = np.nanargmin(ranges)
+        except ValueError:
+            rospy.loginfo('No points in scan')
+            return
+        min_range = ranges[index]
+        min_angle = angles[index]
+        # Convert to a point
+        out_point = PointStamped()
+        out_point.header.frame_id = scan.header.frame_id
+        out_point.point.x = min_range * np.cos(min_angle)
+        out_point.point.y = min_range * np.sin(min_angle)
+        self.point_pub.publish(out_point)
+        out_point = self.tf_listener.transformPoint(target_frame='/odom', ps=out_point)
+        target_pose = Pose2D()
+        target_pose.x = out_point.point.x
+        target_pose.y = out_point.point.y
+        self.target_pose_publisher.publish(target_pose)
+
 
     def pointcloud_updated(self, pointcloud):  # type: (PointCloud2) -> None
+        if self.pose is None:
+            rospy.loginfo('Waiting for pose...')
+            return
         min_corner = np.array([-1, -10, 0])
         max_corner = np.array([1, 0.2, 2])
 
@@ -30,7 +70,7 @@ class TargetPositionEstimator:
 
         if points.shape[0] == 0:
             rospy.loginfo('No points in pointcloud')
-            target = np.array([0.0, 0.0, 0.0])
+            target = None
         else:
             target = np.mean(points, axis=0)
 
@@ -43,19 +83,25 @@ class TargetPositionEstimator:
 
         out_point = PointStamped()
         out_point.header.frame_id = pointcloud.header.frame_id
-        out_point.point.x = target[0]
-        out_point.point.y = target[1]
-        out_point.point.z = target[2]
+        out_point.point.x = 0 if target is None else target[0]
+        out_point.point.y = 0 if target is None else target[1]
+        out_point.point.z = 0 if target is None else target[2]
         # print(out_point)
 
         out_point = self.tf_listener.transformPoint(target_frame='/odom', ps=out_point)
 
+        dx = self.pose.x - out_point.point.x
+        dy = self.pose.y - out_point.point.y
+        out_point.point.x += dx / np.sqrt(dx**2 + dy**2) * 1.0
+        out_point.point.y += dy / np.sqrt(dx**2 + dy**2) * 1.0
+
         self.point_pub.publish(out_point)
 
-        target_pose = Pose2D()
-        target_pose.x = out_point.point.x
-        target_pose.y = out_point.point.y
-        self.target_pose_publisher.publish(target_pose)
+        if target is not None:
+            target_pose = Pose2D()
+            target_pose.x = out_point.point.x
+            target_pose.y = out_point.point.y
+            self.target_pose_publisher.publish(target_pose)
 
 
 if __name__ == '__main__':

@@ -18,12 +18,12 @@
     <param name="position_threshold" value="0.1" />
   </node>
 
-  <!-- <node pkg="follow_bot" type="target_position_estimator.py" name="target_position_estimator" output="screen">
+  <node pkg="follow_bot" type="target_position_estimator.py" name="target_position_estimator" output="screen">
     <remap from="pointcloud" to="/camera/depth/points"/>
     <remap from="target_pose" to="/target_pose"/>
-  </node> -->
-  <node pkg="follow_bot" type="navgoal.py" name="navgoal" output="screen">
   </node>
+  <!-- <node pkg="follow_bot" type="navgoal.py" name="navgoal" output="screen">
+  </node> -->
 
   <!-- Velocity smoother -->
   <node pkg="nodelet" type="nodelet" name="velocity_smoother_nodelet_manager" args="manager" />
