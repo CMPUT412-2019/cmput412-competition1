@@ -68,7 +68,7 @@ class FollowState(State):
 
         dp = np.array([dx_mr, dy_mr])
 
-        self.speed = 0.2
+        self.speed = 0.5
         self.angular_speed = 2.0
         v = dp if np.linalg.norm(dp) < self.speed else dp / np.linalg.norm(dp) * self.speed
         vtheta = dtheta if abs(dtheta) < self.angular_speed else np.sign(dtheta) * self.angular_speed
