@@ -26,7 +26,7 @@ class TargetPositionEstimator:
     def pose_callback(self, message):
         self.pose = message
 
-    def __scan_callback(self, scan):  # type: (LaserScan) -> None
+    def scan_callback(self, scan):  # type: (LaserScan) -> None
         if self.pose is None:
             rospy.loginfo('Waiting for pose...')
             return
@@ -56,7 +56,7 @@ class TargetPositionEstimator:
         target_pose.y = out_point.point.y
         self.target_pose_publisher.publish(target_pose)
 
-    def scan_callback(self, scan):  # type: (LaserScan) -> None
+    def __scan_callback(self, scan):  # type: (LaserScan) -> None
         if self.pose is None:
             rospy.loginfo('Waiting for pose...')
             return
