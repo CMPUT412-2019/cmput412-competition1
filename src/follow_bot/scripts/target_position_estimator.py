@@ -7,6 +7,7 @@ from sensor_msgs import point_cloud2
 import numpy as np
 import tf
 import ros_numpy
+from util.cluster import euclidian_clusters, uniform_downsample
 
 
 class TargetPositionEstimator:
@@ -14,23 +15,14 @@ class TargetPositionEstimator:
         rospy.init_node('target_position_estimator')
 
         self.target_pose_publisher = rospy.Publisher('target_pose', Pose2D)
+        self.bounded_ptcloud_publisher = rospy.Publisher('bounded_pointcloud', PointCloud2)
         self.pointcloud_subscriber = rospy.Subscriber('pointcloud', PointCloud2, self.pointcloud_updated)
         self.tf_listener = tf.TransformListener()
         self.point_pub = rospy.Publisher('/target_stamped', PointStamped)
 
     def pointcloud_updated(self, pointcloud):  # type: (PointCloud2) -> None
-        average = np.zeros((3,))
-        num_points = 0
-
         min_corner = np.array([-1, -10, 0])
-        max_corner = np.array([1, 0.2, 10])
-
-        self.min_x = rospy.get_param("~min_x", -0.2)
-        self.min_y = rospy.get_param("~min_y", -0.3)
-
-        self.max_x = rospy.get_param("~max_x", 0.2)
-        self.max_y = rospy.get_param("~max_y", 0.5)
-        self.max_z = rospy.get_param("~max_z", 1.2)
+        max_corner = np.array([1, 0.2, 2])
 
         points = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(pointcloud)
         bound_mask = np.all((points > min_corner) & (points < max_corner), axis=1)
@@ -40,16 +32,18 @@ class TargetPositionEstimator:
             rospy.loginfo('No points in pointcloud')
             return
 
-        average = np.mean(points, axis=0)
+        points = uniform_downsample(points, 0.2)
+        clusters = euclidian_clusters(points, 0.4)
+        targets = [np.mean(points[clusters == i], axis=0)
+                   for i in np.unique(clusters)]
+        distances = np.linalg.norm(targets)
+        target = targets[np.argmin(distances)]
 
         out_point = PointStamped()
         out_point.header.frame_id = pointcloud.header.frame_id
-        # out_point.point.x = average[2]
-        # out_point.point.y = -average[0]
-        # out_point.point.z = -average[2]
-        out_point.point.x = average[0]
-        out_point.point.y = average[1]
-        out_point.point.z = average[2]
+        out_point.point.x = target[0]
+        out_point.point.y = target[1]
+        out_point.point.z = target[2]
         print(out_point)
 
         out_point = self.tf_listener.transformPoint(target_frame='/odom', ps=out_point)
