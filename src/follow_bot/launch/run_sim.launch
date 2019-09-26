@@ -4,4 +4,6 @@
   <include file="$(find follow_bot)/launch/control.launch">
     <arg name="odom_topic" value="/odom" />
   </include>
+
+  <node type="rviz" name="rviz" pkg="rviz" />
 </launch>

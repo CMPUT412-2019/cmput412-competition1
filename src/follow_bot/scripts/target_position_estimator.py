@@ -30,21 +30,23 @@ class TargetPositionEstimator:
 
         if points.shape[0] == 0:
             rospy.loginfo('No points in pointcloud')
-            return
+            target = np.array([0.0, 0.0, 0.0])
+        else:
+            target = np.mean(points, axis=0)
 
-        points = uniform_downsample(points, 0.2)
-        clusters = euclidian_clusters(points, 0.4)
-        targets = [np.mean(points[clusters == i], axis=0)
-                   for i in np.unique(clusters)]
-        distances = np.linalg.norm(targets)
-        target = targets[np.argmin(distances)]
+        # points = uniform_downsample(points, 0.01)
+        # clusters = euclidian_clusters(points, 0.1)
+        # targets = [np.mean(points[clusters == i], axis=0)
+        #            for i in np.unique(clusters)]
+        # distances = np.linalg.norm(targets)
+        # target = targets[np.argmin(distances)]
 
         out_point = PointStamped()
         out_point.header.frame_id = pointcloud.header.frame_id
         out_point.point.x = target[0]
         out_point.point.y = target[1]
         out_point.point.z = target[2]
-        print(out_point)
+        # print(out_point)
 
         out_point = self.tf_listener.transformPoint(target_frame='/odom', ps=out_point)
 

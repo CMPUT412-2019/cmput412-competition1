@@ -9,18 +9,20 @@
 
   <!-- Control node -->
   <node pkg="follow_bot" type="control.py" name="control" output="screen">
-    <remap from="pose2d" to="/pose2d"/>
+    <remap from="odom" to="$(arg odom_topic)"/>
     <remap from="target" to="/target_pose"/>
-    <remap from="cmd_vel" to="/control/cmd_vel_raw"/>
+    <remap from="cmd_vel" to="/cmd_vel_mux/input/teleop"/>
     <param name="turn_tolerance" value="0.01" />
-    <param name="turn_speed" value="1" />
-    <param name="move_speed" value="0.7" />
+    <param name="turn_speed" value="5.4" />
+    <param name="move_speed" value="0.8" />
     <param name="position_threshold" value="0.1" />
   </node>
 
-  <node pkg="follow_bot" type="target_position_estimator.py" name="target_position_estimator" output="screen">
+  <!-- <node pkg="follow_bot" type="target_position_estimator.py" name="target_position_estimator" output="screen">
     <remap from="pointcloud" to="/camera/depth/points"/>
-    <remap from="target_pose" to="/target_pose/"/>
+    <remap from="target_pose" to="/target_pose"/>
+  </node> -->
+  <node pkg="follow_bot" type="navgoal.py" name="navgoal" output="screen">
   </node>
 
   <!-- Velocity smoother -->

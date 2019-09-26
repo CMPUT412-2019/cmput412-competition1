@@ -3,4 +3,8 @@
   <include file="$(find follow_bot)/launch/control.launch">
     <arg name="odom_topic" value="/mobile_base/odom" />
   </include>
+  <include file="$(find openni2_launch)/launch/openni2.launch">
+    <arg name="publish_tf" value="false"/>
+  </include>
+  <node type="rviz" name="rviz" pkg="rviz" />
 </launch>
