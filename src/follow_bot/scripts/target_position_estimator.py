@@ -37,6 +37,8 @@ class TargetPositionEstimator:
         angle_mid = (scan.angle_min + scan.angle_max) / 2.0
         ranges[angles <= (angle_mid - 0.25)] = np.nan
 
+        # ranges = ranges * np.linspace(0.1, 1.0, len(ranges))
+
         try:
             index = np.nanargmin(ranges)
         except ValueError:
@@ -78,18 +80,18 @@ class TargetPositionEstimator:
                       for i in np.unique(clusters)]
         cluster_sizes = [np.sum(clusters == i) for i in np.unique(clusters)]
         try:
-            index = np.nanargmin(cluster_sizes)
+            target_cluster = clusters[np.nanargmin(cluster_sizes)]
+            target_range = np.mean(ranges[clusters == target_cluster])
+            target_angle = np.mean(angles[clusters == target_cluster])
         except ValueError:
             print("no points found")
             return
 
-        min_range = ranges[index]
-        min_angle = angles[index]
         # Convert to a point
         out_point = PointStamped()
         out_point.header.frame_id = scan.header.frame_id
-        out_point.point.x = min_range * np.cos(min_angle)
-        out_point.point.y = min_range * np.sin(min_angle)
+        out_point.point.x = target_range * np.cos(target_angle)
+        out_point.point.y = target_angle * np.sin(target_angle)
         self.point_pub.publish(out_point)
         out_point = self.tf_listener.transformPoint(target_frame='/odom', ps=out_point)
         target_pose = Pose2D()
