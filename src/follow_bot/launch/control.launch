@@ -24,6 +24,10 @@
   </node>
   <!-- <node pkg="follow_bot" type="navgoal.py" name="navgoal" output="screen">
   </node> -->
+  <node pkg="follow_bot" type="position_history.py" name="history">
+    <remap from="target_history" to="/target_history" />
+    <remap from="target_pose" to="/target_pose" />
+  </node>
 
   <!-- Velocity smoother -->
   <node pkg="nodelet" type="nodelet" name="velocity_smoother_nodelet_manager" args="manager" />
@@ -39,4 +43,5 @@
     <remap from="velocity_smoother/smooth_cmd_vel" to="/cmd_vel_mux/input/teleop" />
   </node>
 
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find follow_bot)/rviz_config.rviz"  />
 </launch>

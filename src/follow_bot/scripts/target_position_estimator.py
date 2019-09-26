@@ -35,7 +35,7 @@ class TargetPositionEstimator:
         ranges = np.array(scan.ranges)
         angles = np.linspace(scan.angle_min, scan.angle_max, num=len(scan.ranges), endpoint=True)
         angle_mid = (scan.angle_min + scan.angle_max) / 2.0
-        ranges[angles <= (angle_mid - 0.35)] = np.nan
+        ranges[angles <= (angle_mid - 0.25)] = np.nan
 
         try:
             index = np.nanargmin(ranges)
