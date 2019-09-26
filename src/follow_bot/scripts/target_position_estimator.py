@@ -26,7 +26,7 @@ class TargetPositionEstimator:
     def pose_callback(self, message):
         self.pose = message
 
-    def scan_callback(self, scan):  # type: (LaserScan) -> None
+    def __scan_callback(self, scan):  # type: (LaserScan) -> None
         if self.pose is None:
             rospy.loginfo('Waiting for pose...')
             return
@@ -56,6 +56,41 @@ class TargetPositionEstimator:
         target_pose.y = out_point.point.y
         self.target_pose_publisher.publish(target_pose)
 
+    def scan_callback(self, scan):  # type: (LaserScan) -> None
+        if self.pose is None:
+            rospy.loginfo('Waiting for pose...')
+            return
+        scan = scan  # type: LaserScan
+
+        ranges = np.array(scan.ranges)
+        angles = np.linspace(scan.angle_min, scan.angle_max, num=len(scan.ranges), endpoint=True)
+        angle_mid = (scan.angle_min + scan.angle_max) / 2.0
+
+        ranges = ranges[angles <= (angle_mid - 0.35)]
+        angles = angles[angles <= (angle_mid - 0.35)]
+
+        x = ranges * np.sin(angles)
+        y = ranges * np.cos(angles)
+        z = np.zeros_like(x)
+        xyz = np.column_stack((x, y, z))
+        clusters = euclidian_clusters(xyz, 0.2)
+        cluster_xs = [np.mean(x[clusters == i], axis=0)
+                      for i in np.unique(clusters)]
+        index = np.nanargmax(cluster_xs)
+
+        min_range = ranges[index]
+        min_angle = angles[index]
+        # Convert to a point
+        out_point = PointStamped()
+        out_point.header.frame_id = scan.header.frame_id
+        out_point.point.x = min_range * np.cos(min_angle)
+        out_point.point.y = min_range * np.sin(min_angle)
+        self.point_pub.publish(out_point)
+        out_point = self.tf_listener.transformPoint(target_frame='/odom', ps=out_point)
+        target_pose = Pose2D()
+        target_pose.x = out_point.point.x
+        target_pose.y = out_point.point.y
+        self.target_pose_publisher.publish(target_pose)
 
     def pointcloud_updated(self, pointcloud):  # type: (PointCloud2) -> None
         if self.pose is None:
