@@ -44,7 +44,6 @@ class FollowState(State):
             self.rate.sleep()
 
     def drive_toward_target(self):
-
         dx_tr = self.target.x - self.pose.x
         dy_tr = self.target.y - self.pose.y
 
@@ -68,27 +67,48 @@ class FollowState(State):
 
         dp = np.array([dx_mr, dy_mr])
 
-        self.speed = 0.5
+        self.speed = 0.8
         self.angular_speed = 2.0
-        v = dp if np.linalg.norm(dp) < self.speed else dp / np.linalg.norm(dp) * self.speed
-        vtheta = dtheta if abs(dtheta) < self.angular_speed else np.sign(dtheta) * self.angular_speed
+        v = dp * 1 if np.linalg.norm(dp) < self.speed else dp / np.linalg.norm(dp) * self.speed
+        vtheta = dtheta*6.0 if abs(dtheta) < self.angular_speed else np.sign(dtheta) * self.angular_speed * 6.0
 
-        self.publish_twist(v, vtheta)
+        if (np.cos(self.pose.theta)*dx_mr + np.sin(self.pose.theta)*dy_mr) < 0:
+            self.publish_twist(np.array([-0.1*np.cos(self.pose.theta), -0.1*np.sin(self.pose.theta)]), 0.0)
+        else:
+            self.publish_twist(v, vtheta)
 
-    def get_deltas_to_target(self, target):  # type: (Pose2D) -> Tuple[np.ndarray, float, float]
-        odom = self.odom
+    def drive_toward_target2(self):
 
-        dx = target.x - odom.pose.pose.position.x
-        dy = target.y - odom.pose.pose.position.y
-        dtheta = math.atan2(dy, dx) - self.pose.theta
-        if abs(dtheta) > np.pi:
-            dtheta = dtheta - np.sign(dtheta) * 2 * np.pi
-        ddtheta = -odom.twist.twist.angular.z
-        return np.array([dx, dy]), dtheta, ddtheta
+        self.target.x = 10
+        self.target.y = 5
+
+        dx_tr = self.target.x - self.pose.x
+        dy_tr = self.target.y - self.pose.y
+        theta_r = self.pose.theta
+
+        A = np.cos(theta_r)**2 - np.sin(theta_r)**2 - 1.0
+        B = 2.0 * dy_tr * np.cos(theta_r)
+        C = dx_tr**2 + dy_tr**2
+
+        r1, r2 = np.roots([A, B, C])
+
+        A = -np.cos(theta_r)**2 + np.sin(theta_r)**2 - 1.0
+        B = 2.0 * dx_tr * np.sin(theta_r)
+        r3, r4 = np.roots([A, B, C])
+        print(r1, r2, r3, r4)
+        r = r2
+        print(r)
+
+        v = min(0.5, np.sqrt(dx_tr**2 + dy_tr**2))
+        w = v/r
+        t = Twist()
+        t.linear.x = v
+        t.angular.z = w
+        self.twist_publisher.publish(t)
 
     def publish_twist(self, v, vtheta):  # type: (np.ndarray, float) -> None
         t = Twist()
         theta = self.pose.theta
-        t.linear.x = max(0, v[0] * math.cos(theta) + v[1] * math.sin(theta))
+        t.linear.x = v[0] * math.cos(theta) + v[1] * math.sin(theta)
         t.angular.z = vtheta
         self.twist_publisher.publish(t)
