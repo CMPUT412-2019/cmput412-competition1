@@ -66,8 +66,8 @@ class TargetPositionEstimator:
         angles = np.linspace(scan.angle_min, scan.angle_max, num=len(scan.ranges), endpoint=True)
         angle_mid = (scan.angle_min + scan.angle_max) / 2.0
 
-        ranges = ranges[angles <= (angle_mid - 0.35)]
-        angles = angles[angles <= (angle_mid - 0.35)]
+        ranges = ranges[angles <= (angle_mid - 0.25)]
+        angles = angles[angles <= (angle_mid - 0.25)]
 
         x = ranges * np.sin(angles)
         y = ranges * np.cos(angles)
@@ -76,7 +76,12 @@ class TargetPositionEstimator:
         clusters = euclidian_clusters(xyz, 0.2)
         cluster_xs = [np.mean(x[clusters == i], axis=0)
                       for i in np.unique(clusters)]
-        index = np.nanargmax(cluster_xs)
+        cluster_sizes = [np.sum(clusters == i) for i in np.unique(clusters)]
+        try:
+            index = np.nanargmin(cluster_sizes)
+        except ValueError:
+            print("no points found")
+            return
 
         min_range = ranges[index]
         min_angle = angles[index]
