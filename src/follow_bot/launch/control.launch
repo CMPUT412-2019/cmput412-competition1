@@ -7,44 +7,28 @@
     <remap from="pose2d" to="/pose2d" />
   </node>
 
-  <!-- Control node -->
+  <!-- Run main state machine -->
   <node pkg="follow_bot" type="control.py" name="control" output="screen">
+    <remap from="joy" to="/joy"/>
     <remap from="odom" to="$(arg odom_topic)"/>
+    <remap from="pose2d" to="/pose2d"/>
     <remap from="target" to="/target_pose"/>
     <remap from="cmd_vel" to="/cmd_vel_mux/input/teleop"/>
-    <param name="turn_tolerance" value="0.01" />
-    <param name="turn_speed" value="5.4" />
-    <param name="move_speed" value="0.8" />
-    <param name="position_threshold" value="0.1" />
   </node>
 
+  <!-- Node to estimate target position in odom space -->
   <node pkg="follow_bot" type="target_position_estimator.py" name="target_position_estimator" output="screen">
-    <remap from="pointcloud" to="/camera/depth/points"/>
+    <param name="angle_cutoff_offset" value="0.25"/>
     <remap from="target_pose" to="/target_pose"/>
-  </node>
-  <!-- <node pkg="follow_bot" type="navgoal.py" name="navgoal" output="screen">
-  </node> -->
-  <node pkg="follow_bot" type="position_history.py" name="history">
-    <remap from="target_history" to="/target_history" />
-    <remap from="target_pose" to="/target_pose" />
+    <remap from="target_point" to="/target_point"/>
+    <remap from="pose2d" to="/pose2d"/>
+    <remap from="scan" to="/scan"/>
   </node>
 
-  <!-- Velocity smoother -->
-  <node pkg="nodelet" type="nodelet" name="velocity_smoother_nodelet_manager" args="manager" />
-  <node pkg="nodelet" type="nodelet" name="velocity_smoother"
-        args="load yocs_velocity_smoother/VelocitySmootherNodelet velocity_smoother_nodelet_manager">
-    <param name="accel_lim_v" value="1" />
-    <param name="accel_lim_w" value="7" />
-    <param name="speed_lim_v" value=".8" />
-    <param name="speed_lim_w" value="5.4" />
-    <param name="robot_feedback" value="1" />
-    <remap from="velocity_smoother/raw_cmd_vel" to="/control/cmd_vel_raw" />
-    <remap from="velocity_smoother/odometry" to="/$(arg odom_topic)" />
-    <remap from="velocity_smoother/smooth_cmd_vel" to="/cmd_vel_mux/input/teleop" />
-  </node>
-
+  <!-- Launch rviz with a premade config to show target, pointcloud, etc -->
   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find follow_bot)/rviz_config.rviz"  />
 
+  <!-- Listen for joystick -->
   <node type="joy_node" pkg="joy" name="joy_node">
     <remap from="joy" to="/joy" />
   </node>
