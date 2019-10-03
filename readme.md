@@ -34,7 +34,28 @@ Kobuki base into your computer, then run
 ## Method
 The task of following another robot is split into several subtasks.
 
-### Finding the robot
+### Finding the target robot
 The first step the follow-bot performs is to locate the robot it is tracking. This is done by means
 a virtual laser scan (obtained from the camera's RGB-D information from the `depthimage_to_laserscan`
-package). 
+package). The closest point in the laser scan that has angle <= 0.25 (where pi/2 to the right and
+ -pi/2 is to the left) is considered the location of the robot. This point is transformed into the
+ odometry frame for the next step.
+ 
+ ### Calcuating a target point
+ 
+ The next step is to locate a target to move towards. This is not actually the location of the target
+ robot--instead it is a point in between the follow-bot and the target robot. This is to prevent the
+ follow-bot from colliding with the target, and also because when the target is farther away from the
+ follow-bot it is in a wider portion of the follow-bot's field of view, reducing the chances of
+ losing the target if it moves laterally to the follow-bot's view direction. The target point is 1
+ meter behind the target robot.
+ 
+ ### Moving toward the target point
+ 
+ The follow-bot is directed toward the target point by simple proportional control. The difference
+ in the forward direction from the target point to the robot is calculated, and the robot's forward
+ velocity is set to be proportional to this (capped at a maximum speed, and smoothed with a
+ velocity smoother to a maximum acceleration). The robot moves slower backward than forward.
+ 
+ If the robot is moving forward, it also changes direction according to a proportional control on
+ the z-angle (again capped and smoothed with a velocity smoother).
