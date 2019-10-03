@@ -100,7 +100,7 @@ This node contains the `smach` state machine used to control the robot. It is ca
 
   - **follow_distance** (*float*, default `1.0`): The distance between the target and the midpoint (the point the robot follows)
   - **retreat_speed** (*float*, default `0.1`): Speed at which robot backs up when midpoint is behind it.
-  - **angle_switch_distance** (*float*, default `0.1`): Distance to midpoint at which the robot starts turning toward robot instead of twoard midpoint.
+  - **angle_switch_distance** (*float*, default `0.1`): Distance to midpoint at which the robot starts turning toward the target instead of toward the midpoint.
   - **linear_speed_cutoff** (*float*, default `0.8`): Maximum linear speed before controller starts to cap the proportional control.
   - **linear_speed_multiplier** (*float*, default `1.0`): Proportional constant for the linear speed.
   - **angular_speed_cutoff** (*float*, default `2.0`): Maximum angular speed before controller starts to cap the proportional control.
