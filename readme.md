@@ -12,6 +12,7 @@ Kinetic. Gazebo is required if one wants to test the project in a simulated envi
 it must be noted that the robot parameters are currently tuned for a real-world turtlebot and
 perform sub-optimally on the simulator).
 
+
 To get started, simply clone the repository:
 
     git clone https://github.com/alex-epp/cmput412-competition1
@@ -54,8 +55,54 @@ package). The closest point in the laser scan that has angle <= 0.25 (where pi/2
  
  The follow-bot is directed toward the target point by simple proportional control. The difference
  in the forward direction from the target point to the robot is calculated, and the robot's forward
- velocity is set to be proportional to this (capped at a maximum speed, and smoothed with a
- velocity smoother to a maximum acceleration). The robot moves slower backward than forward.
+ velocity is set to be proportional to this (capped at a maximum speed). The robot moves slower backward than forward.
  
  If the robot is moving forward, it also changes direction according to a proportional control on
  the z-angle (again capped and smoothed with a velocity smoother).
+ 
+ ## Nodes
+ 
+ ### target_position_estimator.py
+ 
+ This node estimates and publishes the target's position from the laser scan. It is called automatically by the `run*.launch` files.
+ 
+ #### Published
+ 
+   - **target_pose** (*geometry_msgs/Pose2D*): The estimated 2D pose of the target in the `odom` frame. The angle is not used.
+   - **target_point** (*geometry_msgs/PointStamped*): The estimated position of the target. In general it is probably simpler to subscribe to **target_pose**, but this topic is useful for visualization.
+
+#### Subscribed
+
+  - **pose2d** (*geometry_msgs/Pose2D*): The pose of the robot in the `odom` frame.
+  - **scan** (*sensor_msgs/LaserScan*): The laser scan data.
+
+
+#### Parameters
+
+  - **angle_cutoff_offset** (*float*): Controls the angle at which points in the laserscan are ignored. If 0, then all points in the right hemisphere are ignored. If positive, then some points in the right hemisphere are kept (those with angle from the center of less than `angle_cutoff_offset`). If negative, then similarly some points in the left hemisphere are discarded.
+
+### control.py
+
+This node contains the `smach` state machine used to control the robot. It is called automatically by the `run*.launch` files.
+
+#### Published
+
+  - **cmd_vel** (*geometry_msgs/Twist*): The Twist messages used to control the robot
+
+#### Subscribed
+
+  - **joy** (*sensor_msgs/Joy*): Joystick input
+  - **odom** (*nav_msgs/Odometry*): Robot odometry
+  - **pose2d** (*geometry_msgs/Pose2D*): The robot's pose in the `odom` frame
+  - **target** (*geometry_msgs/Pose2D*): The pose of the target to follow, in the `odom` frame (angle is ignored).
+
+#### Parameters
+
+  - **follow_distance** (*float*, default `1.0`): The distance between the target and the midpoint (the point the robot follows)
+  - **retreat_speed** (*float*, default `0.1`): Speed at which robot backs up when midpoint is behind it.
+  - **angle_switch_distance** (*float*, default `0.1`): Distance to midpoint at which the robot starts turning toward robot instead of twoard midpoint.
+  - **linear_speed_cutoff** (*float*, default `0.8`): Maximum linear speed before controller starts to cap the proportional control.
+  - **linear_speed_multiplier** (*float*, default `1.0`): Proportional constant for the linear speed.
+  - **angular_speed_cutoff** (*float*, default `2.0`): Maximum angular speed before controller starts to cap the proportional control.
+  - **angular_speed_multiplier** (*float*, default `6.0`): Proportional constant for the angular speed.
+ 
